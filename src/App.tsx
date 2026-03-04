@@ -55,10 +55,10 @@ interface DetalleSimulacion {
 
 function App() {
   // ======================================================================
-  // 🔐 SISTEMA DE BLOQUEO Y PRUEBA (TRIAL SYSTEM)
+  // 🔐 SISTEMA DE BLOQUEO Y PRUEBA (TRIAL SYSTEM) - VERSIÓN AUTO-RESET
   // ======================================================================
-  const HORAS_DE_PRUEBA = 48; // <--- Cambia aquí las horas (puedes poner 0.05 para probar)
-  const CLAVE_SECRETA = "Jhovani2033+*"; // <--- Tu contraseña de desbloqueo
+  const HORAS_DE_PRUEBA = 48; // <--- Cambia aquí las horas
+  const CLAVE_SECRETA = "Jhovani2027*"; // <--- SI CAMBIAS ESTO, EL CONTADOR SE REINICIA
 
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [isLocked, setIsLocked] = useState(false);
@@ -66,6 +66,18 @@ function App() {
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
+    // 1. VERIFICAR SI CAMBIÓ LA CONTRASEÑA
+    const savedPassVersion = localStorage.getItem("ripley_pass_version");
+    
+    // Si la contraseña guardada es distinta a la del código, reseteamos todo
+    if (savedPassVersion !== CLAVE_SECRETA) {
+      localStorage.removeItem("ripley_unlocked");
+      localStorage.removeItem("ripley_endtime");
+      // Guardamos la nueva contraseña como referencia
+      localStorage.setItem("ripley_pass_version", CLAVE_SECRETA);
+    }
+
+    // 2. LÓGICA NORMAL DEL CONTADOR
     if (localStorage.getItem("ripley_unlocked") === "true") return;
 
     let endTimeStr = localStorage.getItem("ripley_endtime");
@@ -91,7 +103,7 @@ function App() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [CLAVE_SECRETA, HORAS_DE_PRUEBA]); // Se actualiza si cambias la clave o las horas
 
   const unlockApp = () => {
     if (passInput === CLAVE_SECRETA) {
@@ -165,7 +177,7 @@ function App() {
        fechaActualCuota = addMonths(fechaActualCuota, 1);
     }
 
-    // 4. SIMULADOR REAL (MOTOR PURO SIN REDONDEO - RESTAURADO)
+    // 4. SIMULADOR REAL (MOTOR PURO SIN REDONDEO)
     const simularReal = (cuotaTanteo: number) => {
       let saldo = montoCapitalizado; 
       let fechaAnterior = existePeriodo0 ? fechaCortePeriodo0 : fechaBase;
@@ -205,7 +217,7 @@ function App() {
     
     const resultadoReal = simularReal(cuotaOptima); 
 
-    // 6. SIMULADOR SOMBRA (PARALELO - "MAQUILLAJE")
+    // 6. SIMULADOR SOMBRA (PARALELO)
     const generarCapitalesSombra = () => {
         let saldoSombra = m; 
         let fechaAnterior = fechaBase; 
@@ -214,7 +226,6 @@ function App() {
 
         fechasCronograma.forEach((fechaPago, index) => {
             const fPago = new Date(fechaPago); fPago.setHours(0,0,0,0);
-            
             let fAnt = new Date(fechaAnterior); fAnt.setHours(0,0,0,0);
             let diasCalc = differenceInDays(fPago, fAnt);
             
@@ -268,7 +279,6 @@ function App() {
         };
     });
 
-    // TCEA
     const flujosXIRR = [-m];
     const fechasXIRR = [fechaBase];
     cronogramaFinal.forEach(c => {
@@ -290,7 +300,6 @@ function App() {
   }, [monto, tea, plazo, fechaDesembolso, diaPago, tasaSeguro]); 
 
   const fmt = (n: number) => new Intl.NumberFormat("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
-
 
   // ======================================================================
   // 🛑 PANTALLA DE BLOQUEO
@@ -339,10 +348,8 @@ function App() {
     <div className="min-h-screen bg-gray-100 py-10 px-4 font-sans text-gray-800 flex justify-center items-start">
       <div className="bg-white w-full max-w-7xl rounded-2xl shadow-xl overflow-hidden border border-gray-200">
         
-        {/* ================= HEADER MODIFICADO ================= */}
+        {/* HEADER */}
         <div className="bg-[#4F2D7F] p-6 flex flex-col md:flex-row justify-between items-center border-b-4 border-yellow-400 gap-4">
-          
-          {/* Logo y Títulos */}
           <div className="flex items-center gap-5">
             <div className="h-14 w-14 bg-white rounded-full flex items-center justify-center shadow-lg shrink-0">
               <span className="text-[#4F2D7F] text-4xl font-black pb-1">R</span>
@@ -357,13 +364,12 @@ function App() {
             </div>
           </div>
           
-          {/* Contador Gigante y Botón */}
           <div className="flex items-center gap-6">
             {timeLeft !== null && timeLeft > 0 && localStorage.getItem("ripley_unlocked") !== "true" && (
               <div className="flex items-center gap-3">
                 <div className="text-white text-right leading-tight hidden sm:block">
-                  <span className="block text-[10px] uppercase tracking-widest text-purple-200">VERSIÓN DE</span>
-                  <span className="block text-sm font-bold uppercase tracking-wide">PRUEBA</span>
+                  <span className="block text-[10px] uppercase tracking-widest text-purple-200">VERSIÓN DE PRUEBA</span>
+                  <span className="block text-sm font-bold uppercase tracking-wide">TERMINA EN</span>
                 </div>
                 <div className="bg-yellow-400 text-yellow-900 font-mono font-black text-3xl md:text-4xl px-4 py-2 rounded-xl shadow-[0_0_20px_rgba(250,204,21,0.6)] border-2 border-yellow-200 animate-pulse tracking-wider">
                   {formatTime(timeLeft)}
@@ -375,9 +381,7 @@ function App() {
               🗑️ Limpiar
             </button>
           </div>
-
         </div>
-        {/* ================= FIN DEL HEADER ================= */}
 
         <div className="p-4 md:p-8">
           <div className="grid lg:grid-cols-12 gap-8">
@@ -484,7 +488,6 @@ function App() {
                             <td className="p-3 text-center text-gray-500 font-mono">{fila.numero}</td>
                             <td className="p-3 text-center font-medium text-gray-700">{fila.fechaPago}</td>
                             <td className={`p-3 font-bold ${fila.diasVisual > 30 ? 'text-[#4F2D7F]' : 'text-gray-400'}`}>{fila.diasVisual}</td>
-                            
                             <td className="p-3 text-gray-500">{fmt(fila.capitalVisual)}</td>
                             <td className="p-3 font-medium text-green-600">{fmt(fila.amortizacion)}</td>
                             <td className="p-3 text-gray-600">{fmt(fila.interes)}</td>
