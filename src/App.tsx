@@ -55,10 +55,16 @@ interface DetalleSimulacion {
 
 function App() {
   // ======================================================================
-  // 🔐 SISTEMA DE BLOQUEO Y PRUEBA (TRIAL SYSTEM) - VERSIÓN AUTO-RESET
+  // 🚧 INTERRUPTOR DE MANTENIMIENTO
+  // Cambia esto a `false` cuando quieras que la web vuelva a la normalidad
   // ======================================================================
-  const HORAS_DE_PRUEBA = 48; // <--- Cambia aquí las horas
-  const CLAVE_SECRETA = "Jhovani2027*"; // <--- SI CAMBIAS ESTO, EL CONTADOR SE REINICIA
+  const EN_MANTENIMIENTO = true; 
+
+  // ======================================================================
+  // 🔐 SISTEMA DE BLOQUEO Y PRUEBA (TRIAL SYSTEM)
+  // ======================================================================
+  const HORAS_DE_PRUEBA = 48; 
+  const CLAVE_SECRETA = "Jhovani2026"; 
 
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [isLocked, setIsLocked] = useState(false);
@@ -66,18 +72,6 @@ function App() {
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    // 1. VERIFICAR SI CAMBIÓ LA CONTRASEÑA
-    const savedPassVersion = localStorage.getItem("ripley_pass_version");
-    
-    // Si la contraseña guardada es distinta a la del código, reseteamos todo
-    if (savedPassVersion !== CLAVE_SECRETA) {
-      localStorage.removeItem("ripley_unlocked");
-      localStorage.removeItem("ripley_endtime");
-      // Guardamos la nueva contraseña como referencia
-      localStorage.setItem("ripley_pass_version", CLAVE_SECRETA);
-    }
-
-    // 2. LÓGICA NORMAL DEL CONTADOR
     if (localStorage.getItem("ripley_unlocked") === "true") return;
 
     let endTimeStr = localStorage.getItem("ripley_endtime");
@@ -103,7 +97,7 @@ function App() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [CLAVE_SECRETA, HORAS_DE_PRUEBA]); // Se actualiza si cambias la clave o las horas
+  }, []);
 
   const unlockApp = () => {
     if (passInput === CLAVE_SECRETA) {
@@ -177,7 +171,7 @@ function App() {
        fechaActualCuota = addMonths(fechaActualCuota, 1);
     }
 
-    // 4. SIMULADOR REAL (MOTOR PURO SIN REDONDEO)
+    // 4. SIMULADOR REAL (MOTOR PURO SIN REDONDEO - RESTAURADO)
     const simularReal = (cuotaTanteo: number) => {
       let saldo = montoCapitalizado; 
       let fechaAnterior = existePeriodo0 ? fechaCortePeriodo0 : fechaBase;
@@ -217,15 +211,15 @@ function App() {
     
     const resultadoReal = simularReal(cuotaOptima); 
 
-    // 6. SIMULADOR SOMBRA (PARALELO)
+    // 6. SIMULADOR SOMBRA (PARALELO - "MAQUILLAJE")
     const generarCapitalesSombra = () => {
         let saldoSombra = m; 
         let fechaAnterior = fechaBase; 
         const capitales: number[] = [];
-        const cuotaCalculo = cuotaOptima; 
 
         fechasCronograma.forEach((fechaPago, index) => {
             const fPago = new Date(fechaPago); fPago.setHours(0,0,0,0);
+            
             let fAnt = new Date(fechaAnterior); fAnt.setHours(0,0,0,0);
             let diasCalc = differenceInDays(fPago, fAnt);
             
@@ -237,11 +231,13 @@ function App() {
                diasCalc = differenceInDays(fPago, fAnt);
             }
 
-            const intSombra = saldoSombra * (Math.pow(1 + ted, diasCalc) - 1);
-            const segSombra = saldoSombra * (tasaSeguro / 100);
-            const amortSombra = cuotaCalculo - intSombra - segSombra;
+            const intSombra = round2(saldoSombra * (Math.pow(1 + ted, diasCalc) - 1));
+            const segSombra = round2(saldoSombra * (tasaSeguro / 100));
+            const cuotaVisual = round2(cuotaOptima);
+            const amortSombra = round2(cuotaVisual - intSombra - segSombra);
 
             capitales.push(saldoSombra);
+
             saldoSombra -= amortSombra;
             fechaAnterior = fPago;
         });
@@ -279,6 +275,7 @@ function App() {
         };
     });
 
+    // TCEA
     const flujosXIRR = [-m];
     const fechasXIRR = [fechaBase];
     cronogramaFinal.forEach(c => {
@@ -302,7 +299,36 @@ function App() {
   const fmt = (n: number) => new Intl.NumberFormat("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
   // ======================================================================
-  // 🛑 PANTALLA DE BLOQUEO
+  // 🚧 PANTALLA DE MANTENIMIENTO
+  // ======================================================================
+  if (EN_MANTENIMIENTO) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans relative overflow-hidden">
+        {/* Luces de fondo estilo "construcción" */}
+        <div className="absolute w-96 h-96 bg-[#4F2D7F] rounded-full blur-[100px] opacity-40 -top-20 -left-20 animate-pulse"></div>
+        <div className="absolute w-96 h-96 bg-yellow-500 rounded-full blur-[120px] opacity-20 bottom-0 right-0"></div>
+
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl w-full max-w-md text-center z-10">
+          <div className="text-7xl mb-6 drop-shadow-lg animate-bounce">🛠️</div>
+          <h2 className="text-3xl font-black text-white mb-3">En Mantenimiento</h2>
+          <p className="text-slate-300 mb-8 text-sm leading-relaxed px-2">
+            Estamos realizando mejoras en el simulador para ofrecerte un mejor servicio y cálculos más precisos. Estaremos de vuelta muy pronto.
+          </p>
+          
+          <div className="w-full bg-[#4F2D7F]/40 border border-purple-500/30 py-4 px-2 rounded-xl shadow-inner">
+            <p className="text-yellow-400 text-xs font-bold font-mono tracking-[0.2em] uppercase">
+              Por favor, vuelve más tarde
+            </p>
+          </div>
+          
+          <p className="mt-8 text-xs text-slate-500 font-mono">Desarrollado: By Jhovani 👨‍💻</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ======================================================================
+  // 🛑 PANTALLA DE BLOQUEO (TRIAL)
   // ======================================================================
   if (isLocked) {
     return (
@@ -368,8 +394,8 @@ function App() {
             {timeLeft !== null && timeLeft > 0 && localStorage.getItem("ripley_unlocked") !== "true" && (
               <div className="flex items-center gap-3">
                 <div className="text-white text-right leading-tight hidden sm:block">
-                  <span className="block text-[10px] uppercase tracking-widest text-purple-200">VERSIÓN DE PRUEBA</span>
-                  <span className="block text-sm font-bold uppercase tracking-wide">TERMINA EN</span>
+                  <span className="block text-[10px] uppercase tracking-widest text-purple-200">VERSIÓN DE</span>
+                  <span className="block text-sm font-bold uppercase tracking-wide">PRUEBA</span>
                 </div>
                 <div className="bg-yellow-400 text-yellow-900 font-mono font-black text-3xl md:text-4xl px-4 py-2 rounded-xl shadow-[0_0_20px_rgba(250,204,21,0.6)] border-2 border-yellow-200 animate-pulse tracking-wider">
                   {formatTime(timeLeft)}
