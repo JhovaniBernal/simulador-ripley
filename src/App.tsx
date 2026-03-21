@@ -58,7 +58,7 @@ function App() {
   // 🚧 INTERRUPTOR DE MANTENIMIENTO
   // Cambia esto a `false` cuando quieras que la web vuelva a la normalidad
   // ======================================================================
-  const EN_MANTENIMIENTO = true; 
+  const EN_MANTENIMIENTO = false; 
 
   // ======================================================================
   // 🔐 SISTEMA DE BLOQUEO Y PRUEBA (TRIAL SYSTEM)
