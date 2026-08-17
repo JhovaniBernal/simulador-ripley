@@ -58,13 +58,13 @@ function App() {
   // 🚧 INTERRUPTOR DE MANTENIMIENTO
   // Cambia esto a `false` cuando quieras que la web vuelva a la normalidad
   // ======================================================================
-  const EN_MANTENIMIENTO = true; 
+  const EN_MANTENIMIENTO = false; 
 
   // ======================================================================
   // 🔐 SISTEMA DE BLOQUEO Y PRUEBA (TRIAL SYSTEM)
   // ======================================================================
-  const HORAS_DE_PRUEBA = 48; 
-  const CLAVE_SECRETA = "Jhovani2026"; 
+  const HORAS_DE_PRUEBA = 72; 
+  const CLAVE_SECRETA = "Agosto2026"; 
 
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [isLocked, setIsLocked] = useState(false);
